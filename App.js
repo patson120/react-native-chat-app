@@ -45,7 +45,7 @@ const ChatStack = () => {
           headerShown: true,
           headerRight: () => (<TouchableOpacity
             onPress={() => onSignOut()}
-            style={{ marginRight: 10, marginTop: 15}}
+            style={{ marginRight: 10, marginTop: 15 }}
           >
             <Icon.LogOut stroke="#0c000e" strokeWidth={1} fill="#f6f7fb" height={30} width={30} />
           </TouchableOpacity>),

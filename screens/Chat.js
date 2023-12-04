@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
-import { View, TouchableOpacity } from 'react-native';
+import { View } from 'react-native';
 import { GiftedChat } from 'react-native-gifted-chat';
 
 import {
@@ -34,7 +34,7 @@ const Chat = () => {
         const unsubscribe = onSnapshot(q, snapshot => {
             setMessages(
                 snapshot.docs.map((doc) => ({
-                    _id: doc._id,
+                    _id: doc.data()._id,
                     text: doc.data().text,
                     createdAt: doc.data().createdAt.toDate(),
                     user: doc.data().user,
@@ -48,6 +48,7 @@ const Chat = () => {
     return (
         <View style={{ flex: 1 }}>
             <GiftedChat
+                key={new Date().getTime()}
                 messages={messages}
                 onSend={messages => onSend(messages)}
                 user={{
