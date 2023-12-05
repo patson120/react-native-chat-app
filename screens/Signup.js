@@ -5,19 +5,45 @@ import { auth } from '../config/firebase';
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
 
+import { getDatabase, ref, set } from 'firebase/database';
+import { updateUser } from '../store';
+import { useDispatch } from 'react-redux';
+
 const SingUp = ({ navigation }) => {
+
+    const database = getDatabase();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [username, setUsername] = useState("");
+    const dispatch = useDispatch();
 
     const onHandleSignup = () => {
 
         if (email !== "" && password !== "") {
-            createUserWithEmailAndPassword(auth, email, password)
-                .then(() => { console.log("Succes");})
+            createUserWithEmailAndPassword(auth, email.trim(), password.trim())
+                .then((response) => {
+                    createNewUser(response.user);
+                    console.log("Succes", response.user.uid);
+                })
                 .catch((err) => Alert.alert("Login error", err.message))
         }
     }
+
+    const createNewUser = async (user) => {
+        // Create a new user with the given data
+        const newUserObj = {
+            _id: user.uid,
+            username: username.trim(),
+            email: user.email.trim(),
+            avatar: 'https://i.pravatar.cc/150?u=' + user.uid,
+            friends: []
+        };
+        set(ref(database, `users/${user.uid}`), newUserObj);
+        dispatch(updateUser(newUserObj));
+        setUsername("");
+    }
+
     return (
         <View
             style={{
@@ -37,6 +63,26 @@ const SingUp = ({ navigation }) => {
             >Sign Up</Text>
 
             <TextInput
+                placeholder='Enter your username'
+                autoCapitalize='none'
+                autoCorrect={false}
+                textContentType='givenName'
+                value={username}
+                onChangeText={setUsername}
+
+                style={{
+                    backgroundColor: '#cececd',
+                    fontSize: 18,
+                    width: '80%',
+                    marginHorizontal: '10%',
+                    paddingVertical: 10,
+                    paddingHorizontal: 20,
+                    marginTop: 40,
+                    borderRadius: 10
+                }}
+            />
+
+            <TextInput
                 placeholder='Enter your email adress'
                 autoCapitalize='none'
                 autoCorrect={false}
@@ -51,7 +97,7 @@ const SingUp = ({ navigation }) => {
                     marginHorizontal: '10%',
                     paddingVertical: 10,
                     paddingHorizontal: 20,
-                    marginTop: 40,
+                    marginTop: 20,
                     borderRadius: 10
                 }}
             />
@@ -84,7 +130,7 @@ const SingUp = ({ navigation }) => {
                     backgroundColor: '#fc7500',
                     width: '80%',
                     marginHorizontal: '10%',
-                    marginTop: 50,
+                    marginTop: 40,
                     justifyContent: 'center',
                     alignItems: 'center',
                     padding: 12,

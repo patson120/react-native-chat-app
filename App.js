@@ -10,7 +10,9 @@ import { View, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { auth, signOut } from './config/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import * as Icon from "react-native-feather";
+import { store } from './store';
 
+import { Provider } from 'react-redux'
 
 
 const AuthenticatedUserContext = createContext({});
@@ -72,26 +74,27 @@ const AuthStack = () => {
 
 const RootNavigator = () => {
 
-  const { user, setUser } = useContext(AuthenticatedUserContext);
+  // const { user, setUser } = useContext(AuthenticatedUserContext);
   const [loading, setLoading] = useState(true);
+  const user = useSelector(selectUser);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth,
-      async authenticatedUser => {
-        authenticatedUser ? setUser(authenticatedUser) : setUser(null);
-        setLoading(false);
-      }
-    )
-    return () => unsubscribe();
-  }, [user]);
+  // useEffect(() => {
+  //   const unsubscribe = onAuthStateChanged(auth,
+  //     async authenticatedUser => {
+  //       authenticatedUser ? setUser(authenticatedUser) : setUser(null);
+  //       setLoading(false);
+  //     }
+  //   )
+  //   return () => unsubscribe();
+  // }, [user]);
 
-  if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+  //       <ActivityIndicator size="large" />
+  //     </View>
+  //   );
+  // }
 
   return (
     <NavigationContainer>
@@ -103,9 +106,11 @@ const RootNavigator = () => {
 
 export default function App() {
   return (
-    <AuthenticatedUserProvider>
-      <RootNavigator />
-    </AuthenticatedUserProvider>
+    <Provider store={store}>
+      <AuthenticatedUserProvider>
+        <RootNavigator />
+      </AuthenticatedUserProvider>
+    </Provider>
   );
 }
 
