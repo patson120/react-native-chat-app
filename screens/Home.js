@@ -42,15 +42,15 @@ const Home = ({ navigation }) => {
             if (data) {
                 dispatch(updateUser({ ...data }));
                 setUsers(data.friends);
-                // setMyData(prevData => (prevData ? {
-                //     ...prevData,
-                //     friends: data.friends,
-                // } : {
-                //     ...data
-                // }
-                // ));
+                setMyData(prevData => (prevData ? {
+                    ...prevData,
+                    friends: data.friends,
+                } : {
+                    ...data
+                }
+                ));
 
-                setMyData(userstate)
+                // setMyData(userstate)
             }
         });
 
