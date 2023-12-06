@@ -38,19 +38,18 @@ const Home = ({ navigation }) => {
         const myUserRef = ref(database, `users/${userstate?._id}`);
         onValue(myUserRef, snapshot => {
             const data = snapshot.val();
-
             if (data) {
                 dispatch(updateUser({ ...data }));
                 setUsers(data.friends);
-                setMyData(prevData => (prevData ? {
-                    ...prevData,
-                    friends: data.friends,
-                } : {
-                    ...data
-                }
-                ));
+                // setMyData(prevData => (prevData ? {
+                //     ...prevData,
+                //     friends: data.friends,
+                // } : {
+                //     ...data
+                // }
+                // ));
 
-                // setMyData(userstate)
+                setMyData(userstate)
             }
         });
 
@@ -193,7 +192,7 @@ const Home = ({ navigation }) => {
                     horizontal={false}
                     data={users}
                     renderItem={({ item }) => renderUser(item, navigation, dispatch)}
-                    keyExtractor={item => `${item._id}`}
+                    keyExtractor={(item, i) => `${item._id}_${i}`}
                 />
 
             </View>
