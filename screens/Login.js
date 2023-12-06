@@ -3,38 +3,22 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
-import { getDatabase, get, ref } from 'firebase/database';
-import { useDispatch, useSelector } from 'react-redux';
-import { selectUser, updateUser } from '../store';
 
 const Login = ({ navigation }) => {
-    const database = getDatabase();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
-    const dispatch = useDispatch();
-    const user = useSelector(selectUser);
-
     const onHandleLogin = async () => {
-
         if (email !== "" && password !== "") {
             try {
-                const response = await signInWithEmailAndPassword(auth, "patrickkennenl@gmail.com", "patson120");
-                const data = await findUser(response?.user?.uid);
-                dispatch(updateUser({
-                    ...data,
-                    friends: data.friends.length ? data.friends : user.friends 
-                }));
+                // const response = await signInWithEmailAndPassword(auth, "patrickkennenl@gmail.com", "patson120");
+                const response = await signInWithEmailAndPassword(auth, email, password);
+                console.log("Success", response?.user?.uid);
             } catch (error) {
                 Alert.alert("Login error", error.message);
             }
         }
     }
-
-    const findUser = async (name) => {
-        const mySnapshot = await get(ref(database, `users/${name}`));
-        return mySnapshot.val();
-    };
 
     return (
         <View

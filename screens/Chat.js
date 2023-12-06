@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { GiftedChat } from 'react-native-gifted-chat';
 
@@ -11,18 +11,16 @@ import {
     ref,
     update
 } from 'firebase/database';
-const Chat = ({ route }) => {
-    const [messages, setMessages] = useState([]);
-    const [selectedUser, setSelectedUser] = useState(null);
-    const [myData, setMyData] = useState(null);
+import { useSelector } from 'react-redux';
+const Chat = () => {
+
     const database = getDatabase();
 
-    useEffect(() => {
-        if (route.params != null) {
-            setSelectedUser(prev => route.params?.selectedUser);
-            setMyData(prev => route.params?.myData);
-        }
-    }, [selectedUser?.chatroomId]);
+    const state = useSelector( state => state.user);
+    
+    const [messages, setMessages] = useState([]);
+    const [selectedUser, setSelectedUser] = useState(state.correspondant);
+    const [myData, setMyData] = useState(state.user);
 
 
     useLayoutEffect
@@ -135,6 +133,7 @@ const Chat = ({ route }) => {
                 messagesContainerStyle={{
                     backgroundColor: '#fff',
                 }}
+
             />
         </View>
     );

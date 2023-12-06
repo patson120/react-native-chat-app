@@ -10,9 +10,10 @@ import { View, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { auth, signOut } from './config/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import * as Icon from "react-native-feather";
-import { store } from './store';
+import {store, updateUser } from './store';
 
-import { Provider } from 'react-redux'
+import { Provider, useDispatch } from 'react-redux';
+import { getDatabase, get, ref, } from 'firebase/database';
 
 
 const AuthenticatedUserContext = createContext({});
@@ -73,28 +74,39 @@ const AuthStack = () => {
 }
 
 const RootNavigator = () => {
-
-  // const { user, setUser } = useContext(AuthenticatedUserContext);
+  const { user, setUser } = useContext(AuthenticatedUserContext);
   const [loading, setLoading] = useState(true);
-  const user = useSelector(selectUser);
+  const dispatch = useDispatch()
+  const database = getDatabase();
 
-  // useEffect(() => {
-  //   const unsubscribe = onAuthStateChanged(auth,
-  //     async authenticatedUser => {
-  //       authenticatedUser ? setUser(authenticatedUser) : setUser(null);
-  //       setLoading(false);
-  //     }
-  //   )
-  //   return () => unsubscribe();
-  // }, [user]);
+  const findUser = async (userId) => {
+    const mySnapshot = await get(ref(database, `users/${userId}`));
+    return mySnapshot.val();
+  };
 
-  // if (loading) {
-  //   return (
-  //     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-  //       <ActivityIndicator size="large" />
-  //     </View>
-  //   );
-  // }
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth,
+      async authenticatedUser => {
+        authenticatedUser ? setUser(authenticatedUser) : setUser(null);
+        const data = await findUser(authenticatedUser?.uid);
+        dispatch(updateUser({
+          ...data,
+          friends: data?.friends !== undefined ? data?.friends : []
+        })
+        );
+        setLoading(false);
+      }
+    )
+    return () => unsubscribe();
+  }, [user]);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer>
@@ -114,3 +126,5 @@ export default function App() {
   );
 }
 
+// build apk 
+// eas build -p android --profile preview

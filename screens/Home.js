@@ -13,55 +13,52 @@ import {
     off,
     get,
     push,
-    update
+    update,
+    query,
+    orderByChild,
+    equalTo,
 } from 'firebase/database';
-import { selectCorrespondant, selectUser, updateUser } from '../store';
+import { selectUser, updateCorrespondant, updateUser } from '../store';
 
 const CHAT = require('../assets/chat.jpg');
 
 const Home = ({ navigation }) => {
     const dispatch = useDispatch();
+    const database = getDatabase();
+    const userstate = useSelector(selectUser);
 
-    const user = useSelector(selectUser);
-    const correspondant = useSelector(selectCorrespondant);
-
-
-    const [currentUser, setCurrentUser] = useState(user?.username);
     const [friendUsername, setFriendUsername] = useState("");
     const [users, setUsers] = useState([]);
-    const [myData, setMyData] = useState(user);
+    const [myData, setMyData] = useState(userstate);
     const [showInput, setShowInput] = useState(false);
 
-    const database = getDatabase();
+    useEffect(() => {
+        // set friends list change listener
+        console.log("User id ", userstate._id);
+        const myUserRef = ref(database, `users/${userstate?._id}`);
+        onValue(myUserRef, snapshot => {
+            const data = snapshot.val();
 
-    console.log('====================================');
-    console.log(user);
-    console.log('====================================');
+            if (data) {
+                dispatch(updateUser({ ...data }));
+                setUsers(data.friends);
+                // setMyData(prevData => (prevData ? {
+                //     ...prevData,
+                //     friends: data.friends,
+                // } : {
+                //     ...data
+                // }
+                // ));
 
-    // useEffect(() => {
-    //     // set friends list change listener
-    //     const myUserRef = ref(database, `users/${currentUser}`);
-    //     onValue(myUserRef, snapshot => {
-    //         const data = snapshot.val();
-    //         console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-    //         console.log("It'is work!", data);
-    //         console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-    //         dispatch(updateUser({ ...data }));
-    //         setUsers(data.friends);
-    //         setMyData(prevData => (prevData ? {
-    //             ...prevData,
-    //             friends: data.friends,
-    //         } : {
-    //             ...data
-    //         }
-    //         ));
-    //     });
+                setMyData(userstate)
+            }
+        });
 
-    //     return () => {
-    //         //remove user listener
-    //         off(myUserRef);
-    //     };
-    // }, [currentUser]);
+        return () => {
+            //remove user listener
+            off(myUserRef);
+        };
+    }, [userstate?._id]);
 
 
     const onAddFriend = async () => {
@@ -69,7 +66,7 @@ const Home = ({ navigation }) => {
         try {
             // find user and add it to my friends and also add me to his friends
 
-            const user = await findUser(friendUsername);
+            const user = await findUserByName(friendUsername);
 
             if (user) {
                 if (user.username === myData.username) {
@@ -89,18 +86,19 @@ const Home = ({ navigation }) => {
 
                 // create a chatroom and store the chatroom id
 
-                const newChatroomRef = push(ref(database, 'chatrooms'), {
+                const newChatroomRef = push(ref(database, `chatrooms`), {
                     firstUser: myData.username,
                     secondUser: user.username,
                     messages: [],
                 });
+
 
                 // Get the unique key of the chatroom
                 const newChatroomId = newChatroomRef.key;
 
                 const userFriends = user.friends || [];
                 //join myself to this user friend list
-                update(ref(database, `users/${user.username}`), {
+                update(ref(database, `users/${user?._id}`), {
                     friends: [
                         ...userFriends,
                         {
@@ -119,24 +117,29 @@ const Home = ({ navigation }) => {
                 };
                 dispatch(updateUser({
                     ...myData,
-                    friends: [ newFriend, ...myFriends ]
+                    friends: [newFriend, ...myFriends]
                 }));
                 //add this user to my friend list
-                update(ref(database, `users/${myData.username}`), {
+                update(ref(database, `users/${myData?._id}`), {
                     friends: [...myFriends, newFriend],
                 });
+                setFriendUsername("");
+                setShowInput(false);
             }
-            setFriendUsername("");
-            setShowInput(false);
+
         } catch (error) {
             Alert.alert(error.message);
             console.error(error);
         }
     };
 
-    const findUser = async (name) => {
-        const mySnapshot = await get(ref(database, `users/${name}`));
-        return mySnapshot.val();
+    const findUserByName = async (name) => {
+        const mySnapshot = await get(query(
+            ref(database, "users"),
+            orderByChild('username'),
+            equalTo(name),
+        ));
+        return Object.entries(mySnapshot.val())[0][1];
     };
 
     return (
@@ -148,8 +151,6 @@ const Home = ({ navigation }) => {
                 style={{
                     flex: 1,
                     backgroundColor: '#fff',
-                    justifyContent: 'flex-start',
-                    alignItems: 'flex-start',
                 }}
             >
                 {
@@ -176,7 +177,7 @@ const Home = ({ navigation }) => {
                             </TouchableOpacity>
                             <Text
                                 style={{ fontSize: 18, fontWeight: 'bold' }}
-                            >Welcome {currentUser}</Text>
+                            >Welcome {userstate?.username}</Text>
                             <Image
                                 source={CHAT}
                                 style={{
@@ -189,8 +190,9 @@ const Home = ({ navigation }) => {
                         </View>}
 
                 <FlatList
+                    horizontal={false}
                     data={users}
-                    renderItem={({ item }) => renderUser(item, navigation, myData)}
+                    renderItem={({ item }) => renderUser(item, navigation, dispatch)}
                     keyExtractor={item => `${item._id}`}
                 />
 
@@ -203,15 +205,16 @@ const Home = ({ navigation }) => {
 export default Home;
 
 
-const renderUser = (item, navigation, myData) => {
-    const data = {
-        selectedUser: item,
-        myData: myData
+const renderUser = (item, navigation, dispatch) => {
+
+    const handleChat = () => {
+        dispatch(updateCorrespondant(item))
+        navigation.navigate("Chat");
     }
     return (
-        <Pressable onPress={() => navigation.navigate("Chat", data)} style={styles.row}>
+        <Pressable onPress={() => handleChat()} style={styles.row}>
             <Image style={styles.avatar} source={{ uri: item.avatar }} />
-            <Text>{item.username}</Text>
+            <Text style={{ fontSize: 16, fontWeight: "400" }} >{item.username}</Text>
         </Pressable>
     );
 };
@@ -220,15 +223,18 @@ const styles = StyleSheet.create({
     avatar: {
         width: 50,
         height: 50,
-        marginRight: 10,
+        marginRight: 15,
+        borderRadius: 100
+
     },
     row: {
+        flex: 1,
         flexDirection: 'row',
         padding: 10,
         alignItems: 'center',
         borderBottomColor: '#cacaca',
         borderBottomWidth: 1,
-        width: '100%'
+        marginLeft: 15
     },
     addUser: {
         flexDirection: 'row',
